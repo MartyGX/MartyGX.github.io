@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MartyGX Launcher</title>
+    <meta name="theme-color" content="#070707">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700&display=swap');
+
+        :root {
+            --ui-scale: 1;
+            --accent: #cc0000;
+            --accent-hi: #ff2222;
+            --accent-dim: #7a0000;
+            --accent-glow: rgba(200, 0, 0, .22);
+            --bg: #070707;
+            --bg2: #0b0b0b;
+            --bg3: #101010;
+            --panel: #0d0d0d;
+            --border: #2a2a2a;
+            --border2: #8a0000;
+            --scroll: #404040;
+            --line2: #404040;
+            --text: #ccc;
+            --text-dim: #666;
+            --text-bright: #eee;
+            --hover: rgba(255, 255, 255, .035);
+            --mono: 'Share Tech Mono', monospace;
+            --sans: 'Rajdhani', 'Segoe UI', sans-serif;
+            --java: #e69a2e;
+            --bedrock: #36b5a0
+        }
+
+        [data-theme=green] {
+            --accent: #00cc44;
+            --accent-hi: #00ff55;
+            --accent-dim: #006622;
+            --accent-glow: rgba(0, 180, 60, .15);
+            --border2: #404040
+        }
+
+        [data-theme=midnight] {
+            --accent: #5566ff;
+            --accent-hi: #7788ff;
+            --accent-dim: #2233bb;
+            --accent-glow: rgba(80, 100, 255, .18);
+            --border2: #1a2050;
+            --bg: #070710;
+            --bg2: #0c0c1a;
+            --bg3: #111125;
+            --panel: #0e0e1e
+        }
+
+        [data-theme=ash] {
+            --accent: #999;
+            --accent-hi: #ccc;
+            --accent-dim: #555;
+            --accent-glow: rgba(150, 150, 150, .15);
+            --border2: #404040
+        }
+
+        [data-theme=amber] {
+            --accent: #cc7700;
+            --accent-hi: #ffaa00;
+            --accent-dim: #7a4400;
+            --accent-glow: rgba(200, 120, 0, .18);
+            --border2: #3a2200;
+            --bg: #090600;
+            --bg2: #100d00;
+            --bg3: #181200;
+            --panel: #130f00
+        }
+
+        [data-theme=blue] {
+            --accent: #3d8bff;
+            --accent-hi: #6aa8ff;
+            --accent-dim: #1c4a99;
+            --accent-glow: rgba(60, 130, 255, .16);
+            --border2: #404040
+        }
+
+        [data-theme=matrix] {
+            --accent: #00cc44;
+            --accent-hi: #00ff55;
+            --accent-dim: #006622;
+            --accent-glow: rgba(0, 180, 60, .15);
+            --bg: #010a04;
+            --bg2: #04110a;
+            --bg3: #07180e;
+            --panel: #05130a;
+            --border: #12331f;
+            --border2: #003318;
+            --text: #9fd9b0;
+            --text-dim: #3f8a5c;
+            --text-bright: #d6ffe3
+        }
+
+        [data-theme=light] {
+            --accent: #cc0000;
+            --accent-hi: #e01010;
+            --accent-dim: #e8a0a0;
+            --accent-glow: rgba(200, 0, 0, .12);
+            --bg: #f1f1f1;
+            --bg2: #e7e7e7;
+            --bg3: #ddd;
+            --panel: #fafafa;
+            --border: #cfcfcf;
+            --border2: #b5b5b5;
+            --text: #333;
+            --text-dim: #7a7a7a;
+            --text-bright: #111;
+            --hover: rgba(0, 0, 0, .05);
+            --scroll: #b5b5b5;
+            --line2: #b5b5b5
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            display: flex;
+            flex-direction: column
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, .055) 3px, rgba(0, 0, 0, .055) 4px);
+            pointer-events: none;
+            z-index: 9000
+        }
+
+        button,
+        input,
+        select {
+            font-family: inherit
+        }
+
+        .launcher {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg2);
+            overflow: hidden;
+            zoom: var(--ui-scale)
+        }
+
+        .title-bar {
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            padding: 0 18px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            position: relative
+        }
+
+        .title-bar::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: .35
+        }
+
+        .title-logo {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .title-logo .ver {
+            color: var(--text-dim);
+            font-size: 10px;
+            letter-spacing: .1em
+        }
+
+        .title-dot,
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--accent);
+            animation: pulse 2s ease-in-out infinite
+        }
+
+        @keyframes pulse {
+            50% {
+                opacity: .25
+            }
+        }
+
+        .ed-pill {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            border: 1px solid currentColor;
+            padding: 2px 8px
+        }
+
+        .ed-java {
+            color: var(--java)
+        }
+
+        .ed-bedrock {
+            color: var(--bedrock)
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden
+        }
+
+        .sidebar {
+            width: 195px;
+            flex-shrink: 0;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column
+        }
+
+        .profile {
+            padding: 16px 14px 13px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .profile-label,
+        .nav-section-label,
+        .grp {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: .22em
+        }
+
+        .profile-label {
+            margin-bottom: 5px
+        }
+
+        .profile-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-bright);
+            letter-spacing: .04em;
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .profile-status {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 5px
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px
+        }
+
+        nav {
+            flex: 1;
+            min-height: 0;
+            padding: 6px 0;
+            overflow-y: auto
+        }
+
+        .nav-section-label {
+            padding: 12px 15px 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .nav-section-label i {
+            width: 7px;
+            height: 7px;
+            display: inline-block
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background .13s, color .13s;
+            border-left: 2px solid transparent;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .06em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            user-select: none
+        }
+
+        .nav-item:hover {
+            background: var(--hover);
+            color: var(--text)
+        }
+
+        .nav-item.selected {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            color: var(--text-bright)
+        }
+
+        .nav-svg {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: .5
+        }
+
+        .nav-item:hover .nav-svg,
+        .nav-item.selected .nav-svg {
+            opacity: 1
+        }
+
+        .nav-count {
+            margin-left: auto;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim)
+        }
+
+        .sidebar-bottom {
+            flex-shrink: 0;
+            border-top: 1px solid var(--border);
+            padding: 6px 0
+        }
+
+        .main-panel {
+            flex: 1;
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg3);
+            overflow: hidden;
+            position: relative
+        }
+
+        .top-bar {
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            padding: 0 18px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            gap: 12px
+        }
+
+        .game-title {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: .18em;
+            white-space: nowrap
+        }
+
+        .game-title span {
+            color: var(--accent)
+        }
+
+        .breadcrumb {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: .1em;
+            white-space: nowrap
+        }
+
+        .main-content {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        #view-list,
+        #view-settings {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column
+        }
+
+        #view-settings {
+            display: none
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap
+        }
+
+        .search {
+            flex: 1;
+            min-width: 140px;
+            max-width: 320px;
+            background: var(--bg);
+            border: 1px solid var(--border2);
+            color: var(--text-bright);
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 7px 11px;
+            outline: none;
+            letter-spacing: .03em
+        }
+
+        .search:focus {
+            border-color: var(--accent)
+        }
+
+        .search::placeholder {
+            color: var(--text-dim)
+        }
+
+        .chip {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            padding: 6px 10px;
+            cursor: pointer;
+            text-transform: uppercase
+        }
+
+        .chip:hover {
+            border-color: var(--text-dim);
+            color: var(--text)
+        }
+
+        .chip.on {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        #count {
+            margin-left: auto;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: .1em
+        }
+
+        .scroll {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 6px 16px 20px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--scroll) var(--bg3)
+        }
+
+        .grp {
+            padding: 16px 0 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .grp::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border)
+        }
+
+        .tiles {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 6px
+        }
+
+        .tile {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-left: 2px solid var(--border2);
+            padding: 10px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            transition: border-color .13s, background .13s;
+            user-select: none
+        }
+
+        .tile:hover {
+            border-color: var(--accent-dim);
+            background: var(--hover)
+        }
+
+        .tile.sel {
+            border-color: var(--accent);
+            background: var(--accent-glow)
+        }
+
+        .tile b {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-bright);
+            letter-spacing: .03em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .badge {
+            margin-left: auto;
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            padding: 1px 4px;
+            flex-shrink: 0
+        }
+
+        .badge.wasm {
+            color: var(--accent);
+            border-color: var(--border2)
+        }
+
+        .empty {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: center;
+            padding: 50px 0
+        }
+
+        .launch-bar {
+            flex-shrink: 0;
+            background: var(--panel);
+            border-top: 1px solid var(--border);
+            padding: 9px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            z-index: 10;
+            flex-wrap: wrap
+        }
+
+        .version-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 320px;
+            min-width: 180px
+        }
+
+        .version-select {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border2);
+            color: var(--text-bright);
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 7px 11px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            letter-spacing: .05em
+        }
+
+        .version-select:hover,
+        .version-select.open {
+            border-color: var(--accent);
+            background: var(--bg3)
+        }
+
+        .version-select span:first-child {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .chevron {
+            font-size: 9px;
+            color: var(--text-dim);
+            transition: transform .15s
+        }
+
+        .open .chevron {
+            transform: rotate(180deg)
+        }
+
+        .version-dropdown {
+            position: absolute;
+            bottom: calc(100% + 3px);
+            left: 0;
+            right: 0;
+            background: var(--bg2);
+            border: 1px solid var(--border2);
+            max-height: 260px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 -10px 35px rgba(0, 0, 0, .75);
+            scrollbar-width: thin;
+            scrollbar-color: var(--scroll) var(--bg)
+        }
+
+        .version-dropdown.open {
+            display: block
+        }
+
+        .vs-wrap {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--line2);
+            padding: 7px
+        }
+
+        .vs-wrap .search {
+            max-width: none;
+            width: 100%;
+            font-size: 11px;
+            padding: 6px 9px
+        }
+
+        .version-group-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: .22em;
+            padding: 8px 11px 4px;
+            border-top: 1px solid var(--border)
+        }
+
+        .version-option {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 7px 11px;
+            cursor: pointer;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text)
+        }
+
+        .version-option:hover {
+            background: var(--accent-glow);
+            color: var(--text-bright)
+        }
+
+        .version-option.active-ver {
+            color: var(--accent)
+        }
+
+        .launch-mode-badge {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            padding: 5px 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            letter-spacing: .08em
+        }
+
+        .launch-mode-badge:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .play-button {
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            padding: 0 30px;
+            height: 36px;
+            cursor: pointer;
+            clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+            white-space: nowrap;
+            margin-left: auto
+        }
+
+        .play-button:hover {
+            background: var(--accent-hi);
+            box-shadow: 0 0 18px var(--accent-glow)
+        }
+
+        .play-button:disabled {
+            background: var(--border);
+            color: var(--text-dim);
+            cursor: not-allowed;
+            clip-path: none;
+            box-shadow: none
+        }
+
+        .bottom-bar {
+            background: var(--panel);
+            border-top: 1px solid var(--border);
+            padding: 5px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            gap: 10px
+        }
+
+        .status-line,
+        .credit {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: .08em
+        }
+
+        .status-line .hl {
+            color: var(--accent)
+        }
+
+        .settings-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 26px 30px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--scroll) var(--bg3)
+        }
+
+        .settings-section {
+            margin-bottom: 30px
+        }
+
+        .settings-section-title {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: .28em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .settings-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border)
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 15px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            margin-bottom: 3px;
+            gap: 20px;
+            flex-wrap: wrap
+        }
+
+        .settings-row:hover {
+            border-color: var(--border2)
+        }
+
+        .settings-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-bright);
+            letter-spacing: .04em
+        }
+
+        .settings-desc {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            margin-top: 3px;
+            letter-spacing: .05em
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+            gap: 6px
+        }
+
+        .theme-swatch {
+            padding: 9px 6px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: .08em;
+            text-transform: uppercase
+        }
+
+        .theme-swatch:hover {
+            border-color: var(--text-dim);
+            color: var(--text)
+        }
+
+        .theme-swatch.selected {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .swatch-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 1px solid var(--border)
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 6px
+        }
+
+        .mode-card {
+            padding: 13px 12px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            background: var(--panel)
+        }
+
+        .mode-card:hover {
+            border-color: var(--border2)
+        }
+
+        .mode-card.selected {
+            border-color: var(--accent);
+            background: var(--accent-glow)
+        }
+
+        .mode-card-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-bright);
+            letter-spacing: .06em;
+            margin-bottom: 5px;
+            text-transform: uppercase
+        }
+
+        .mode-card.selected .mode-card-title {
+            color: var(--accent)
+        }
+
+        .mode-card-desc {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            line-height: 1.55
+        }
+
+        .settings-input,
+        select.settings-input {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-bright);
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 7px 11px;
+            width: 220px;
+            outline: none
+        }
+
+        .settings-input:focus {
+            border-color: var(--accent)
+        }
+
+        .settings-btn {
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            padding: 7px 18px;
+            cursor: pointer
+        }
+
+        .settings-btn:hover {
+            background: var(--accent-hi)
+        }
+
+        .toggle {
+            position: relative;
+            width: 36px;
+            height: 19px;
+            cursor: pointer;
+            flex-shrink: 0
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--border);
+            border-radius: 10px;
+            transition: background .2s
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 13px;
+            height: 13px;
+            left: 3px;
+            top: 3px;
+            background: var(--text-dim);
+            border-radius: 50%;
+            transition: transform .2s, background .2s
+        }
+
+        .toggle input:checked+.toggle-slider {
+            background: var(--accent-dim)
+        }
+
+        .toggle input:checked+.toggle-slider::before {
+            transform: translateX(17px);
+            background: var(--accent)
+        }
+
+        .viewer {
+            position: absolute;
+            inset: 0;
+            z-index: 50;
+            background: #000;
+            display: none;
+            flex-direction: column
+        }
+
+        .viewer.open {
+            display: flex
+        }
+
+        .viewer-head {
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            padding: 7px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap
+        }
+
+        .viewer-head .nm {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-bright);
+            letter-spacing: .04em
+        }
+
+        .viewer-head .ctl {
+            margin-left: auto;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap
+        }
+
+        .viewer-head button {
+            background: none;
+            border: 1px solid var(--border2);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            padding: 6px 11px;
+            cursor: pointer
+        }
+
+        .viewer-head button:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .viewer iframe {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            border: none;
+            background: #000;
+            display: block
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%) translateY(70px);
+            background: var(--panel);
+            border: 1px solid var(--accent);
+            color: var(--text-bright);
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 9px 20px;
+            z-index: 9999;
+            transition: transform .28s ease;
+            box-shadow: 0 0 20px var(--accent-glow);
+            max-width: 92vw;
+            letter-spacing: .06em
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0)
+        }
+
+        .toast.error {
+            border-color: #ff1744;
+            color: #ff5555
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .88);
+            z-index: 9990;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 14px
+        }
+
+        .loading-overlay.active {
+            display: flex
+        }
+
+        .loading-text {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            letter-spacing: .18em;
+            animation: blink 1s steps(1) infinite;
+            text-align: center;
+            padding: 0 20px
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: .15
+            }
+        }
+
+        .loading-bar-wrap {
+            width: 260px;
+            height: 2px;
+            background: var(--border)
+        }
+
+        .loading-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0;
+            transition: width .12s;
+            box-shadow: 0 0 8px var(--accent)
+        }
+
+        :focus-visible {
+            outline: 1px solid var(--accent);
+            outline-offset: 2px
+        }
+
+        @media(max-width:720px) {
+            .sidebar {
+                width: 54px
+            }
+
+            .profile,
+            .nav-section-label span,
+            .nav-item span,
+            .nav-count {
+                display: none
+            }
+
+            .nav-section-label {
+                padding: 8px 0;
+                justify-content: center
+            }
+
+            .nav-item {
+                justify-content: center;
+                padding: 12px 0
+            }
+
+            .settings-scroll {
+                padding: 18px 14px
+            }
+
+            .breadcrumb {
+                display: none
+            }
+
+            .play-button {
+                padding: 0 20px
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            * {
+                animation: none !important;
+                transition: none !important
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="launcher">
+        <div class="title-bar">
+            <div class="title-logo">
+                <div class="title-dot"></div>MartyGX <span class="ver">v1.0</span>
+            </div>
+            <div class="ed-pill" id="ed-pill"></div>
+        </div>
+        <div class="content">
+            <div class="sidebar">
+                <div class="profile">
+                    <div class="profile-label">Player</div><span class="profile-name" id="profile-name">Player</span>
+                    <div class="profile-status">
+                        <div class="status-dot"></div>ONLINE
+                    </div>
+                </div>
+                <nav>
+                    <div class="nav-section-label"><span>Java Edition</span></div>
+                    <div class="nav-item" data-page="java-versions" onclick="go('java-versions')"><svg class="nav-svg" viewBox="0 0 24 24">
+                            <rect x="2" y="7" width="20" height="13" rx="1" />
+                            <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+                        </svg><span>Versions</span><em class="nav-count" id="n-jv"></em></div>
+                    <div class="nav-item" data-page="java-clients" onclick="go('java-clients')"><svg class="nav-svg" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="4" />
+                        </svg><span>Clients</span><em class="nav-count" id="n-jc"></em></div>
+                    <div class="nav-section-label"><span>Bedrock Edition</span></div>
+                    <div class="nav-item" data-page="bedrock-versions" onclick="go('bedrock-versions')"><svg class="nav-svg" viewBox="0 0 24 24">
+                            <path d="M12 2l9 5v10l-9 5-9-5V7z" />
+                            <polyline points="3 7 12 12 21 7" />
+                            <line x1="12" y1="12" x2="12" y2="22" />
+                        </svg><span>Versions</span><em class="nav-count" id="n-bv"></em></div>
+                </nav>
+                <div class="sidebar-bottom">
+                    <div class="nav-item" data-page="settings" onclick="go('settings')"><svg class="nav-svg" viewBox="0 0 24 24">
+                            <line x1="4" y1="6" x2="20" y2="6" />
+                            <line x1="4" y1="12" x2="20" y2="12" />
+                            <line x1="4" y1="18" x2="20" y2="18" />
+                            <circle cx="9" cy="6" r="2" fill="var(--panel)" />
+                            <circle cx="15" cy="12" r="2" fill="var(--panel)" />
+                            <circle cx="8" cy="18" r="2" fill="var(--panel)" />
+                        </svg><span>Launcher Settings</span></div>
+                </div>
+            </div>
+            <div class="main-panel">
+                <div class="top-bar">
+                    <div class="game-title">EAGLERCRAFT <span id="t-title">// JAVA EDITION</span></div>
+                    <div class="breadcrumb" id="crumb"></div>
+                </div>
+                <div class="main-content">
+                    <div id="view-list">
+                        <div class="toolbar"><input class="search" id="q" placeholder="Search..." oninput="onSearch(this.value)" autocomplete="off"><span id="chips"></span><span id="count"></span></div>
+                        <div class="scroll" id="grid"></div>
+                    </div>
+                    <div id="view-settings">
+                        <div class="settings-scroll" id="settings"></div>
+                    </div>
+                </div>
+                <div class="launch-bar" id="launch-bar">
+                    <div class="version-wrapper">
+                        <div class="version-select" id="vsel" onclick="toggleDrop(event)"><span id="vlabel">Select version</span><span class="chevron">▼</span></div>
+                        <div class="version-dropdown" id="vdrop">
+                            <div class="vs-wrap"><input class="search" id="dq" placeholder="Search..." oninput="renderDrop(this.value)" onclick="event.stopPropagation()" autocomplete="off"></div>
+                            <div id="dlist"></div>
+                        </div>
+                    </div>
+                    <div class="launch-mode-badge" onclick="go('settings')" title="Change in Settings">MODE: <span id="mode-text"></span></div>
+                    <button class="play-button" id="play-btn" onclick="play()" disabled>LAUNCH</button>
+                </div>
+                <div class="bottom-bar">
+                    <div class="status-line" id="status">READY</div>
+                    <div class="credit" id="mirror">MIRROR: AUTO</div>
+                </div>
+                <div class="viewer" id="viewer">
+                    <div class="viewer-head"><span class="ed-pill" id="v-ed"></span><span class="nm" id="v-name"></span>
+                        <div class="ctl"><button onclick="fsGame()">Fullscreen</button><button onclick="tabGame()">New tab</button><button onclick="dlGame()">Download</button><button onclick="closeViewer()">Close</button></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="loading-overlay" id="load">
+        <div class="loading-text" id="load-text">FETCHING...</div>
+        <div class="loading-bar-wrap">
+            <div class="loading-bar" id="load-bar"></div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script>
+        const DATA = {
+            "jv": [
+                ["1.0 WASM", "game/1.0-wasm", "WASM"],
+                ["1.0", "game/1.0", "JavaScript"],
+                ["1.1", "game/1.1", "JavaScript"],
+                ["1.12.2 WASM", "game/1.12.2-wasm", "WASM"],
+                ["1.12.2", "game/1.12.2", "JavaScript"],
+                ["1.13.2 WASM", "game/1.13.2-wasm", "WASM"],
+                ["1.13.2", "game/1.13.2", "JavaScript"],
+                ["1.14.4 WASM", "game/1.14.4-wasm", "WASM"],
+                ["1.14.4", "game/1.14.4", "JavaScript"],
+                ["1.15.2 WASM", "game/1.15.2-wasm", "WASM"],
+                ["1.15.2", "game/1.15.2", "JavaScript"],
+                ["1.16.5 WASM", "game/1.16.5-wasm", "WASM"],
+                ["1.16.5", "game/1.16.5", "JavaScript"],
+                ["1.17.1 WASM", "game/1.17.1-wasm", "WASM"],
+                ["1.19.4 WASM", "game/1.19.4-wasm", "WASM"],
+                ["1.19.4", "game/1.19.4", "JavaScript"],
+                ["1.2.3 WASM", "game/1.2.3-wasm", "WASM"],
+                ["1.2.3", "game/1.2.3", "JavaScript"],
+                ["1.2.5 WASM", "game/1.2.5-wasm", "WASM"],
+                ["1.2.5", "game/1.2.5", "JavaScript"],
+                ["1.20.6 WASM", "game/1.20.6-wasm", "WASM"],
+                ["1.21.11 WASM", "game/1.21.11-wasm", "WASM"],
+                ["1.21.11", "game/1.21.11", "JavaScript"],
+                ["1.3.2 WASM", "game/1.3.2-wasm", "WASM"],
+                ["1.4.7 WASM", "game/1.4.7-wasm", "WASM"],
+                ["1.4.7", "game/1.4.7", "JavaScript"],
+                ["1.5.2 WASM", "game/1.5.2-wasm", "WASM"],
+                ["1.5.2", "game/1.5.2", "JavaScript"],
+                ["1.6.4", "game/1.6.4", "JavaScript"],
+                ["1.7.10 WASM", "game/1.7.10-wasm", "WASM"],
+                ["1.7.10", "game/1.7.10", "JavaScript"],
+                ["1.8.8 WASM", "game/1.8.8-wasm", "WASM"],
+                ["1.8.8", "game/1.8.8", "JavaScript"],
+                ["1.9.4 WASM", "game/1.9.4-wasm", "WASM"],
+                ["1.9.4", "game/1.9.4", "JavaScript"],
+                ["26.1.2 WASM", "game/26.1.2-wasm", "WASM"],
+                ["26.2 WASM", "game/26.2-wasm", "WASM"],
+                ["26.3 WASM", "game/26.3-wasm", "WASM"],
+                ["Alpha 1.0.16_02 WASM", "game/alpha-1.0.16_02-wasm", "WASM"],
+                ["Alpha 1.0.1_01", "game/alpha-1.0.1_01", "JavaScript"],
+                ["Alpha 1.0.4", "game/alpha-1.0.4", "JavaScript"],
+                ["Alpha 1.0.6_03", "game/alpha-1.0.6_03", "JavaScript"],
+                ["Alpha 1.1.2_01", "game/alpha-1.1.2_01", "JavaScript"],
+                ["Alpha 1.2.6 WASM", "game/alpha-1.2.6-wasm", "WASM"],
+                ["Alpha 1.2.6", "game/alpha-1.2.6", "JavaScript"],
+                ["Beta 1.0.2", "game/beta-1.0.2", "JavaScript"],
+                ["Beta 1.0", "game/beta-1.0", "JavaScript"],
+                ["Beta 1.1", "game/beta-1.1", "JavaScript"],
+                ["Beta 1.2", "game/beta-1.2", "JavaScript"],
+                ["Beta 1.3 WASM", "game/beta-1.3-wasm", "WASM"],
+                ["Beta 1.3", "game/beta-1.3", "JavaScript"],
+                ["Beta 1.4", "game/beta-1.4", "JavaScript"],
+                ["Beta 1.5", "game/beta-1.5", "JavaScript"],
+                ["Beta 1.6.4", "game/beta-1.6.4", "JavaScript"],
+                ["Beta 1.7.3", "game/beta-1.7.3", "JavaScript"],
+                ["Beta 1.8.1 WASM", "game/beta-1.8.1-wasm", "WASM"],
+                ["Beta 1.8.1", "game/beta-1.8.1", "JavaScript"],
+                ["Beta 1.9 WASM", "game/beta-1.9-wasm", "WASM"],
+                ["Beta 1.9", "game/beta-1.9", "JavaScript"],
+                ["Classic 0.0.11a WASM", "game/classic-0.0.11a-wasm", "WASM"],
+                ["Classic 0.0.12a-03 WASM", "game/classic-0.0.12a-03-wasm", "WASM"],
+                ["Classic 0.0.13a-03 WASM", "game/classic-0.0.13a-03-wasm", "WASM"],
+                ["Classic 0.0.14a-08 WASM", "game/classic-0.0.14a-08-wasm", "WASM"],
+                ["Classic 0.0.15a WASM", "game/classic-0.0.15a-wasm", "WASM"],
+                ["Classic 0.0.16a-02 WASM", "game/classic-0.0.16a-02-wasm", "WASM"],
+                ["Classic 0.0.17a WASM", "game/classic-0.0.17a-wasm", "WASM"],
+                ["Classic 0.0.18a-02 WASM", "game/classic-0.0.18a-02-wasm", "WASM"],
+                ["Classic 0.0.19a-06 WASM", "game/classic-0.0.19a-06-wasm", "WASM"],
+                ["Classic 0.0.20a-02 WASM", "game/classic-0.0.20a-02-wasm", "WASM"],
+                ["Classic 0.0.21a WASM", "game/classic-0.0.21a-wasm", "WASM"],
+                ["Classic 0.0.22a-05 WASM", "game/classic-0.0.22a-05-wasm", "WASM"],
+                ["Classic 0.0.23a-01 WASM", "game/classic-0.0.23a-01-wasm", "WASM"],
+                ["Classic 0.0.24a-03 WASM", "game/classic-0.0.24a-03-wasm", "WASM"],
+                ["Classic 0.0.25a-05 WASM", "game/classic-0.0.25a-05-wasm", "WASM"],
+                ["Classic 0.3.0 WASM", "game/classic-0.3.0-wasm", "WASM"],
+                ["Classic 4k", "game/4k", "JavaScript"],
+                ["Indev 20100214 WASM", "game/indev-20100214-wasm", "WASM"],
+                ["Indev 20100214", "game/indev-20100214", "JavaScript"],
+                ["Indev 20100219 WASM", "game/indev-20100219-wasm", "WASM"],
+                ["Indev 20100223 WASM", "game/indev-20100223-wasm", "WASM"],
+                ["Indev", "game/indev", "JavaScript"],
+                ["Infdev WASM", "game/infdev-wasm", "WASM"],
+                ["Pre-Classic rd-131655 WASM", "game/pre-classic-rd-131655-wasm", "WASM"],
+                ["Pre-Classic rd-132211 WASM", "game/pre-classic-rd-132211-wasm", "WASM"],
+                ["Pre-Classic rd-132328 WASM", "game/pre-classic-rd-132328-wasm", "WASM"],
+                ["Pre-Classic rd-160052 WASM", "game/pre-classic-rd-160052-wasm", "WASM"],
+                ["Pre-Classic rd-161348 WASM", "game/pre-classic-rd-161348-wasm", "WASM"]
+            ],
+            "jc": [
+                ["Aero Client", "game/Aero Client", "JavaScript"],
+                ["Astra Client 2-1.8.8", "game/Astra Client 2-1.8.8", "JavaScript"],
+                ["Astra Client", "game/Astra Client", "JavaScript"],
+                ["Chromium Client", "game/Chromium Client", "JavaScript"],
+                ["EB Client 1.14.4", "game/EB Client 1.14.4", "JavaScript"],
+                ["EB Client 1.8.8", "game/EB Client 1.8.8", "JavaScript"],
+                ["EB Client", "game/EB Client", "JavaScript"],
+                ["EFI 1.12.2", "game/efi-1.12.2", "JavaScript"],
+                ["EFI 1.8.8", "game/efi-1.8.8", "JavaScript"],
+                ["Eaglerforge", "game/Eaglerforge", "JavaScript"],
+                ["Eaglet", "game/Eaglet", "JavaScript"],
+                ["Eclipse Client", "game/Eclipse Client", "JavaScript"],
+                ["Forge 1.0.0", "game/Forge 1.0.0", "JavaScript"],
+                ["Forge 1.6.4", "game/Forge 1.6.4", "JavaScript"],
+                ["GX-Client", "game/GX-Client", "JavaScript"],
+                ["Huzzium Client", "game/Huzzium Client", "JavaScript"],
+                ["Kozmo Client", "game/Kozmo Client", "JavaScript"],
+                ["Larp Client 1.12.2", "game/Larp Client 1.12.2", "JavaScript"],
+                ["Larp Client 1.14.4", "game/Larp Client 1.14.4", "JavaScript"],
+                ["Modern Client", "game/Modern Client", "JavaScript"],
+                ["Myven Client", "game/Myven Client", "JavaScript"],
+                ["Pixel Client", "game/Pixel Client", "JavaScript"],
+                ["Precision Client", "game/Precision Client", "JavaScript"],
+                ["Reflex Client", "game/Reflex Client", "JavaScript"],
+                ["Resent Client", "game/Resent Client", "JavaScript"],
+                ["Shadow Network", "game/Shadow Network", "JavaScript"],
+                ["The Broken Script 1.8.8", "game/The Broken Script 1.8.8", "JavaScript"],
+                ["Tuff Client Beta", "game/Tuff Client Beta", "JavaScript"],
+                ["Tuff Client", "game/Tuff Client", "JavaScript"]
+            ],
+            "bv": [
+                ["0.6.1 Alpha WASM", "0.6.1-alpha-wasm", "WASM"],
+                ["0.6.1o Alpha WASM", "0.6.1o-alpha-wasm", "WASM"]
+            ]
+        };
+        const $ = s => document.querySelector(s);
+        const esc = s => String(s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        } [c]));
+        const mk = a => a.map((r, i) => ({
+            i,
+            name: r[0],
+            path: r[1],
+            tag: r[2]
+        }));
+
+        const CDNS = [{
+                url: "https://cdn.jsdelivr.net/",
+                type: "@"
+            }, {
+                url: "https://fastly.jsdelivr.net/",
+                type: "@"
+            },
+            {
+                url: "https://gcore.jsdelivr.net/",
+                type: "@"
+            }, {
+                url: "https://testingcf.jsdelivr.net/",
+                type: "@"
+            },
+            {
+                url: "https://quantil.jsdelivr.net/",
+                type: "@"
+            }, {
+                url: "https://originfastly.jsdelivr.net/",
+                type: "@"
+            },
+            {
+                url: "https://cdn.statically.io/",
+                type: "@"
+            }, {
+                url: "https://raw.githack.com/",
+                type: "raw"
+            },
+            {
+                url: "https://cdn.staticdelivr.com/",
+                type: "gh-slash"
+            }, {
+                url: "https://raw.githubusercontent.com/",
+                type: "raw"
+            }
+        ];
+
+        function buildCdnUrl(cdn, username, repo, branch, filepath) {
+            if (cdn.type === "@") return `${cdn.url}gh/${username}/${repo}@${branch}/${filepath}`;
+            if (cdn.type === "gh-slash") return `${cdn.url}gh/${username}/${repo}/${branch}/${filepath}`;
+            return `${cdn.url}${username}/${repo}/${branch}/${filepath}`;
+        }
+        let selectedCdn = null;
+
+        const PAGES = {
+            'java-versions': {
+                ed: 'java',
+                edName: 'Java Edition',
+                name: 'Versions',
+                repo: ['martygx', 'java', 'main'],
+                items: mk(DATA.jv),
+                grouped: true
+            },
+            'java-clients': {
+                ed: 'java',
+                edName: 'Java Edition',
+                name: 'Clients',
+                repo: ['martygx', 'java', 'main'],
+                items: mk(DATA.jc),
+                grouped: false
+            },
+            'bedrock-versions': {
+                ed: 'bedrock',
+                edName: 'Bedrock Edition',
+                name: 'Versions',
+                repo: ['martygx', 'bedrock', 'main'],
+                items: mk(DATA.bv),
+                grouped: false
+            }
+        };
+        const ORDER = ['Release', 'Beta', 'Alpha', 'Indev / Infdev', 'Classic', 'Pre-Classic'];
+
+        function groupOf(n) {
+            n = n.toLowerCase();
+            if (n.startsWith('pre-classic')) return 'Pre-Classic';
+            if (n.startsWith('classic')) return 'Classic';
+            if (/^(indev|infdev)/.test(n)) return 'Indev / Infdev';
+            if (n.startsWith('alpha')) return 'Alpha';
+            if (n.startsWith('beta')) return 'Beta';
+            return 'Release';
+        }
+        const nums = s => (s.match(/\d+/g) || []).map(Number);
+
+        function cmpVer(a, b) {
+            const x = nums(a.name),
+                y = nums(b.name);
+            for (let k = 0; k < Math.max(x.length, y.length); k++) {
+                const d = (y[k] ?? -1) - (x[k] ?? -1);
+                if (d) return d;
+            }
+            return (b.tag === 'WASM') - (a.tag === 'WASM');
+        }
+        const dispName = it => it.name.replace(/\s*WASM$/, '');
+
+        function groups(P, q, tag) {
+            q = (q || '').toLowerCase();
+            const list = P.items.filter(it => (!q || it.name.toLowerCase().includes(q)) && (tag === 'all' || it.tag === tag));
+            if (!P.grouped) return [
+                [null, list.slice().sort((a, b) => a.name.localeCompare(b.name, undefined, {
+                    numeric: true
+                }))]
+            ].filter(g => g[1].length);
+            const buckets = {};
+            list.forEach(it => (buckets[groupOf(it.name)] ||= []).push(it));
+            return ORDER.filter(g => buckets[g]).map(g => [g, buckets[g].sort(cmpVer)]);
+        }
+
+        /* ---- Settings ---- */
+        const THEMES = [
+            ['red', '#cc0000'],
+            ['green', '#00cc44'],
+            ['midnight', '#5566ff'],
+            ['ash', '#999999'],
+            ['amber', '#cc7700'],
+            ['blue', '#3d8bff'],
+            ['matrix', '#00ff55'],
+            ['light', '#e7e7e7']
+        ];
+        const MODES = [
+            ['embed', 'Embedded', 'Plays inside the launcher with the sidebar still available.'],
+            ['full', 'Fullscreen', 'Embedded, then switches the game to fullscreen.'],
+            ['tab', 'New tab', 'Opens the game in its own about:blank tab.']
+        ];
+        let S = {
+            name: 'Player',
+            theme: 'red',
+            mode: 'embed',
+            scale: 1,
+            cdn: 'auto',
+            confirm: true,
+            page: 'java-versions',
+            sel: {}
+        };
+        try {
+            S = Object.assign(S, JSON.parse(localStorage.getItem('ecl.settings') || '{}'));
+        } catch (e) {}
+        const save = () => {
+            try {
+                localStorage.setItem('ecl.settings', JSON.stringify(S));
+            } catch (e) {}
+        };
+
+        function applySettings() {
+            document.documentElement.dataset.theme = S.theme;
+            document.documentElement.style.setProperty('--ui-scale', S.scale);
+            $('#profile-name').textContent = S.name || 'Player';
+            $('#mode-text').textContent = (MODES.find(m => m[0] === S.mode) || MODES[0])[1].toUpperCase();
+            $('#mirror').textContent = 'MIRROR: ' + (selectedCdn ? new URL(selectedCdn.url).hostname.toUpperCase() : (S.cdn === 'auto' ? 'AUTO' : new URL(CDNS[S.cdn].url).hostname.toUpperCase()));
+        }
+
+        function renderSettings() {
+            $('#settings').innerHTML = `
+  <div class="settings-section"><div class="settings-section-title">Player</div>
+    <div class="settings-row"><div><div class="settings-label">Display name</div><div class="settings-desc">Shown in the sidebar</div></div>
+    <div style="display:flex;gap:6px"><input class="settings-input" id="s-name" maxlength="20" value="${esc(S.name)}"><button class="settings-btn" onclick="S.name=$('#s-name').value.trim()||'Player';save();applySettings();toast('Name saved')">Save</button></div></div></div>
+  <div class="settings-section"><div class="settings-section-title">Theme</div><div class="theme-grid">
+    ${THEMES.map(t => `<div class="theme-swatch${S.theme === t[0] ? ' selected' : ''}" onclick="setS('theme','${t[0]}')"><div class="swatch-dot" style="background:${t[1]}"></div>${t[0]}</div>`).join('')}</div>
+    <div class="settings-row" style="margin-top:10px"><div><div class="settings-label">UI scale</div><div class="settings-desc">Resize the whole launcher</div></div>
+    <select class="settings-input" onchange="setS('scale',+this.value)">${[.8, .9, 1, 1.1, 1.25, 1.5].map(v => `<option value="${v}"${S.scale === v ? ' selected' : ''}>${Math.round(v * 100)}%</option>`).join('')}</select></div></div>
+  <div class="settings-section"><div class="settings-section-title">Launch mode</div><div class="mode-grid">
+    ${MODES.map(m => `<div class="mode-card${S.mode === m[0] ? ' selected' : ''}" onclick="setS('mode','${m[0]}')"><div class="mode-card-title">${m[1]}</div><div class="mode-card-desc">${m[2]}</div></div>`).join('')}</div></div>
+  <div class="settings-section"><div class="settings-section-title">Loading</div>
+    <div class="settings-row"><div><div class="settings-label">CDN mirror</div><div class="settings-desc">Auto tries each mirror in order until one answers</div></div>
+    <select class="settings-input" onchange="setS('cdn',this.value==='auto'?'auto':+this.value)"><option value="auto">Auto</option>${CDNS.map((c, i) => `<option value="${i}"${S.cdn === i ? ' selected' : ''}>${new URL(c.url).hostname}</option>`).join('')}</select></div>
+    <div class="settings-row"><div><div class="settings-label">Confirm before leaving</div><div class="settings-desc">Warn before closing the page while a game is open</div></div>
+    <label class="toggle"><input type="checkbox" ${S.confirm ? 'checked' : ''} onchange="setS('confirm',this.checked)"><span class="toggle-slider"></span></label></div></div>`;
+        }
+
+        function setS(k, v) {
+            S[k] = v;
+            save();
+            applySettings();
+            renderSettings();
+        }
+
+        /* ---- Navigation + list ---- */
+        let page = PAGES[S.page] || S.page === 'settings' ? S.page : 'java-versions';
+        if (page === 'settings') page = 'java-versions';
+        let q = '',
+            tagF = 'all';
+        const cur = () => PAGES[page];
+        const selItem = () => cur() && cur().items[S.sel[page]];
+
+        function go(p) {
+            closeDrop();
+            if (p !== 'settings') {
+                page = p;
+                S.page = p;
+                q = '';
+                tagF = 'all';
+                $('#q').value = '';
+                save();
+            }
+            document.querySelectorAll('[data-page]').forEach(n => n.classList.toggle('selected', n.dataset.page === p));
+            const isSet = p === 'settings';
+            $('#view-list').style.display = isSet ? 'none' : 'flex';
+            $('#view-settings').style.display = isSet ? 'flex' : 'none';
+            $('#launch-bar').style.display = isSet ? 'none' : 'flex';
+            const P = isSet ? PAGES[page] : cur();
+            $('#t-title').textContent = '// ' + (isSet ? 'SETTINGS' : P.edName.toUpperCase());
+            $('#crumb').textContent = isSet ? 'HOME / SETTINGS' : `${P.ed.toUpperCase()} / ${P.name.toUpperCase()}`;
+            const pill = $('#ed-pill');
+            pill.textContent = P.edName.toUpperCase();
+            pill.className = 'ed-pill ed-' + P.ed;
+            if (isSet) renderSettings();
+            else {
+                renderChips();
+                renderList();
+                updateLaunch();
+            }
+        }
+
+        function renderChips() {
+            const tags = [...new Set(cur().items.map(i => i.tag))];
+            $('#chips').innerHTML = tags.length < 2 ? '' : ['all', ...tags].map(t => `<button class="chip${tagF === t ? ' on' : ''}" onclick="tagF='${t}';renderChips();renderList()">${t === 'all' ? 'All' : t}</button> `).join('');
+        }
+
+        function onSearch(v) {
+            q = v;
+            renderList();
+        }
+
+        function tile(it) {
+            return `<div class="tile${S.sel[page] === it.i ? ' sel' : ''}" data-i="${it.i}" onclick="pick(${it.i})" ondblclick="pick(${it.i});play()" title="${esc(it.name)}"><b>${esc(dispName(it))}</b><span class="badge${it.tag === 'WASM' ? ' wasm' : ''}">${it.tag === 'WASM' ? 'WASM' : 'JS'}</span></div>`;
+        }
+
+        function renderList() {
+            const gs = groups(cur(), q, tagF),
+                total = gs.reduce((n, g) => n + g[1].length, 0);
+            $('#count').textContent = total + ' AVAILABLE';
+            $('#grid').innerHTML = gs.map(([g, l]) => (g ? `<div class="grp">${g}</div>` : '') + `<div class="tiles">${l.map(tile).join('')}</div>`).join('') || '<div class="empty">No matches. Try a different search.</div>';
+        }
+
+        function pick(i) {
+            S.sel[page] = i;
+            save();
+            document.querySelectorAll('.tile').forEach(t => t.classList.toggle('sel', +t.dataset.i === i));
+            closeDrop();
+            updateLaunch();
+        }
+
+        function updateLaunch() {
+            const it = selItem();
+            $('#vlabel').textContent = it ? dispName(it) + (it.tag === 'WASM' ? ' (WASM)' : '') : 'Select ' + (page === 'java-clients' ? 'client' : 'version');
+            $('#play-btn').disabled = !it;
+        }
+
+        function renderDrop(v) {
+            $('#dlist').innerHTML = groups(cur(), v, 'all').map(([g, l]) => (g ? `<div class="version-group-label">${g}</div>` : '') +
+                l.map(it => `<div class="version-option${S.sel[page] === it.i ? ' active-ver' : ''}" onclick="pick(${it.i})"><span>${esc(dispName(it))}</span><span class="badge${it.tag === 'WASM' ? ' wasm' : ''}">${it.tag === 'WASM' ? 'WASM' : 'JS'}</span></div>`).join('')).join('') || '<div class="empty">No matches.</div>';
+        }
+
+        function toggleDrop(e) {
+            e.stopPropagation();
+            const open = !$('#vdrop').classList.contains('open');
+            closeDrop();
+            if (open) {
+                $('#dq').value = '';
+                renderDrop('');
+                $('#vdrop').classList.add('open');
+                $('#vsel').classList.add('open');
+                $('#dq').focus();
+            }
+        }
+
+        function closeDrop() {
+            $('#vdrop').classList.remove('open');
+            $('#vsel').classList.remove('open');
+        }
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.version-wrapper')) closeDrop();
+        });
+
+        /* ---- UI helpers ---- */
+        let tt, pt, barW = 0;
+
+        function toast(m, err) {
+            const t = $('#toast');
+            t.textContent = m;
+            t.className = 'toast show' + (err ? ' error' : '');
+            clearTimeout(tt);
+            tt = setTimeout(() => t.classList.remove('show'), 3200);
+        }
+        const setStatus = h => $('#status').innerHTML = h;
+
+        function setBar(w) {
+            barW = w;
+            $('#load-bar').style.width = w + '%';
+        }
+
+        function showLoad(t) {
+            $('#load').classList.add('active');
+            $('#load-text').textContent = t;
+            setBar(4);
+            clearInterval(pt);
+            pt = setInterval(() => {
+                if (barW < 85) setBar(barW + (85 - barW) * .06);
+            }, 150);
+        }
+
+        function hideLoad() {
+            clearInterval(pt);
+            setBar(100);
+            setTimeout(() => $('#load').classList.remove('active'), 120);
+        }
+
+        /* ---- Fetch the game's HTML from the first mirror that answers ---- */
+        async function readBody(res) {
+            const len = +res.headers.get('content-length') || 0;
+            if (!res.body || !len) return res.text();
+            const rd = res.body.getReader(),
+                parts = [];
+            let got = 0;
+            for (;;) {
+                const {
+                    done,
+                    value
+                } = await rd.read();
+                if (done) break;
+                parts.push(value);
+                got += value.length;
+                setBar(Math.max(barW, Math.min(.95, got / len) * 100));
+            }
+            return new Blob(parts).text();
+        }
+        async function fetchGame(it, P) {
+            const [u, r, b] = P.repo, dir = encodeURI(it.path);
+            const order = S.cdn === 'auto' ? CDNS : [CDNS[S.cdn], ...CDNS.filter((_, i) => i !== S.cdn)];
+            let last;
+            for (const c of order) {
+                const host = new URL(c.url).hostname;
+                setStatus(`FETCHING FROM <span class="hl">${host.toUpperCase()}</span>...`);
+                const ctl = new AbortController(),
+                    t = setTimeout(() => ctl.abort(), 8000);
+                try {
+                    const res = await fetch(buildCdnUrl(c, u, r, b, dir + '/' + 'index.html'), {
+                        signal: ctl.signal
+                    });
+                    clearTimeout(t);
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const html = await readBody(res);
+                    selectedCdn = c;
+                    applySettings();
+                    const tag = `<base href="${buildCdnUrl(c, u, r, b, dir + '/')}">`;
+                    return /<head[^>]*>/i.test(html) ? html.replace(/<head([^>]*)>/i, `<head$1>${tag}`) : tag + html;
+                } catch (e) {
+                    clearTimeout(t);
+                    last = e;
+                    console.warn(`[Loader] ${host} failed, trying next mirror...`, e);
+                }
+            }
+            throw last || new Error('All mirrors failed');
+        }
+
+        /* ---- Launch ---- */
+        let game = null,
+            frame = null;
+
+        function writeDoc(doc, html) {
+            doc.open();
+            doc.write(html);
+            doc.close();
+        }
+        async function play() {
+            const it = selItem(),
+                P = cur();
+            if (!it || $('#load').classList.contains('active')) return;
+            let w = null;
+            if (S.mode === 'tab') {
+                w = window.open('about:blank', '_blank');
+                if (!w) return toast('Pop-up blocked. Allow pop-ups for this page and try again.', 1);
+                w.document.write(`<title>Loading...</title><body style="background:#070707;color:#cc0000;font-family:monospace">LOADING ${esc(dispName(it))}...</body>`);
+            }
+            showLoad('LOADING ' + dispName(it).toUpperCase());
+            try {
+                const html = await fetchGame(it, P);
+                game = {
+                    it,
+                    P,
+                    html
+                };
+                hideLoad();
+                setStatus(`RUNNING <span class="hl">${esc(P.edName.toUpperCase())} / ${esc(dispName(it).toUpperCase())}</span>`);
+                if (w) writeDoc(w.document, html);
+                else openViewer(S.mode === 'full');
+            } catch (e) {
+                hideLoad();
+                if (w) w.close();
+                setStatus('FAILED TO LOAD');
+                toast(`Could not load ${dispName(it)}. Every mirror failed; check your connection or try again.`, 1);
+            }
+        }
+
+        function openViewer(full) {
+            closeViewer(true);
+            $('#v-name').textContent = dispName(game.it) + (game.it.tag === 'WASM' ? ' (WASM)' : '');
+            const pill = $('#v-ed');
+            pill.textContent = game.P.edName.toUpperCase();
+            pill.className = 'ed-pill ed-' + game.P.ed;
+            frame = document.createElement('iframe');
+            frame.allow = 'fullscreen; autoplay; clipboard-read; clipboard-write; gamepad';
+            frame.allowFullscreen = true;
+            $('#viewer').appendChild(frame);
+            $('#viewer').classList.add('open');
+            writeDoc(frame.contentDocument, game.html);
+            if (full) fsGame();
+        }
+
+        function closeViewer(keep) {
+            if (frame) {
+                frame.remove();
+                frame = null;
+            }
+            $('#viewer').classList.remove('open');
+            if (!keep) {
+                game = null;
+                setStatus('READY');
+            }
+        }
+
+        function fsGame() {
+            const f = frame;
+            if (!f) return;
+            const fn = f.requestFullscreen || f.webkitRequestFullscreen;
+            if (fn) Promise.resolve(fn.call(f)).catch(() => toast('Fullscreen was blocked. Click Fullscreen again.', 1));
+        }
+
+        function tabGame() {
+            if (!game) return;
+            const w = window.open('about:blank', '_blank');
+            if (!w) return toast('Pop-up blocked. Allow pop-ups for this page.', 1);
+            writeDoc(w.document, game.html);
+        }
+
+        function dlGame() {
+            if (!game) return;
+            const a = document.createElement('a'),
+                url = URL.createObjectURL(new Blob([game.html], {
+                    type: 'text/html;charset=utf-8'
+                }));
+            a.href = url;
+            a.download = dispName(game.it).replace(/[^\w.-]+/g, '_') + '.html';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+        window.addEventListener('beforeunload', e => {
+            if (S.confirm && game && frame) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                if ($('#vdrop').classList.contains('open')) closeDrop();
+                else if (game && frame && !document.fullscreenElement) closeViewer();
+            }
+            if (e.key === 'Enter' && !game && !e.target.closest('input') && selItem() && $('#view-list').style.display !== 'none') play();
+        });
+
+        $('#n-jv').textContent = PAGES['java-versions'].items.length;
+        $('#n-jc').textContent = PAGES['java-clients'].items.length;
+        $('#n-bv').textContent = PAGES['bedrock-versions'].items.length;
+        applySettings();
+        go(page);
+    </script>
+</body>
+
+</html>

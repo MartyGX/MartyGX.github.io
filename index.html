@@ -996,9 +996,9 @@
         }
 
         .viewer {
-            position: absolute;
+            position: fixed;
             inset: 0;
-            z-index: 50;
+            z-index: 9100;
             background: #000;
             display: none;
             flex-direction: column
@@ -1011,11 +1011,33 @@
         .viewer-head {
             background: var(--panel);
             border-bottom: 1px solid var(--border);
-            padding: 7px 14px;
+            padding: 5px 14px;
+            min-height: 38px;
             display: flex;
             align-items: center;
             gap: 12px;
-            flex-wrap: wrap
+            flex-wrap: wrap;
+            flex-shrink: 0;
+            zoom: var(--ui-scale)
+        }
+
+        .viewer-head .info {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            white-space: nowrap
+        }
+
+        .viewer-head .info:empty {
+            display: none
+        }
+
+        @media(max-width:720px) {
+            .viewer-head .info {
+                display: none
+            }
         }
 
         .viewer-head .nm {
@@ -2182,12 +2204,12 @@
                     <div class="status-line" id="status">READY</div>
                     <div class="credit" id="mirror">MIRROR: AUTO</div>
                 </div>
-                <div class="viewer" id="viewer">
-                    <div class="viewer-head"><span class="ed-pill" id="v-ed"></span><span class="nm" id="v-name"></span>
-                        <div class="ctl"><button onclick="fsGame()">Fullscreen</button><button onclick="tabGame()">New tab</button><button onclick="dlGame()">Download</button><button onclick="closeViewer()">Close</button></div>
-                    </div>
-                </div>
             </div>
+        </div>
+    </div>
+    <div class="viewer" id="viewer">
+        <div class="viewer-head"><span class="ed-pill" id="v-ed"></span><span class="nm" id="vw-name"></span><span class="info" id="vw-info"></span>
+            <div class="ctl"><button onclick="fsGame()">Fullscreen</button><button onclick="tabGame()">New tab</button><button onclick="dlGame()">Download</button><button onclick="closeViewer()">Close</button></div>
         </div>
     </div>
     <div class="loading-overlay" id="load">
@@ -2199,12 +2221,27 @@
     <div class="toast" id="toast"></div>
     <script>
         const JSON_FILES = {
-            jv: 'zones/java.json',
-            jc: 'zones/java-clients.json',
-            bv: 'zones/bedrock.json',
-            servers: 'zones/servers.json',
-            skins: 'zones/skins.json',
-            config: 'zones/config.json'
+            jv: 'java.json',
+            jc: 'java-clients.json',
+            bv: 'bedrock.json',
+            servers: 'servers.json',
+            skins: 'skins.json',
+            config: 'config.json'
+        };
+        const REPO = {
+            user: 'MartyGX',
+            repo: 'zones',
+            branch: 'main'
+        };
+        const IMG_REPO = {
+            user: 'MartyGX',
+            repo: 'MartyGX.github.io',
+            branch: 'main'
+        };
+        const SKIN_REPO = {
+            user: 'MartyGX',
+            repo: 'skins',
+            branch: 'main'
         };
         const CONFIG = {
             discord: 'https://discord.gg/F8kc4FKjnw',
@@ -2214,11 +2251,6 @@
                 'bedrock-versions': 'images/wallpaper/bedrock.png'
             }
         };
-        async function loadJson(path) {
-            const res = await fetch(path + '?t=' + Date.now());
-            if (!res.ok) throw new Error(path + ': HTTP ' + res.status);
-            return res.json();
-        }
         const $ = s => document.querySelector(s);
         const esc = s => String(s).replace(/[&<>"']/g, c => ({
             '&': '&amp;',
@@ -2281,6 +2313,178 @@
             return `${cdn.url}${username}/${repo}/${branch}/${filepath}`;
         }
         let selectedCdn = null;
+
+        /* Mirror order: the one picked in Settings first, otherwise the last one that answered, then the rest */
+        function cdnOrder() {
+            const first = S.cdn !== 'auto' && CDNS[S.cdn] ? CDNS[S.cdn] : selectedCdn;
+            return first ? [first, ...CDNS.filter(c => c !== first)] : CDNS.slice();
+        }
+
+        /* Fetch with a timeout; parse() runs inside the timeout window so a stalled body also fails over */
+        async function fetchT(url, parse, ms) {
+            const ctl = new AbortController(),
+                t = setTimeout(() => ctl.abort(), ms || 6000);
+            try {
+                const res = await fetch(url, {
+                    signal: ctl.signal
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return await parse(res);
+            } finally {
+                clearTimeout(t);
+            }
+        }
+
+        function repoInfo(kind) {
+            const R = kind === 'img' && IMG_REPO.user && IMG_REPO.repo ? IMG_REPO : REPO;
+            if (R.user && R.repo) return {
+                user: R.user,
+                repo: R.repo,
+                branch: R.branch || 'main'
+            };
+            const m = location.hostname.match(/^([^.]+)\.github\.io$/i);
+            if (!m) return null;
+            const segs = location.pathname.split('/').filter(Boolean);
+            return {
+                user: REPO.user || m[1],
+                repo: REPO.repo || (segs.length > 1 ? segs[0] : m[1] + '.github.io'),
+                branch: REPO.branch || 'main'
+            };
+        }
+        const isAbs = u => /^(https?:|data:|blob:|\/\/)/i.test(u);
+
+        /* Every CDN URL for one of the launcher's own files, in the order they should be tried */
+        function cdnUrls(path, kind, own) {
+            const r = own || repoInfo(kind);
+            if (!r || isAbs(path)) return [];
+            const clean = path.replace(/^\.?\//, '').replace(/^\//, '');
+            return cdnOrder().map(c => ({
+                cdn: c,
+                url: buildCdnUrl(c, r.user, r.repo, r.branch, encodeURI(clean))
+            }));
+        }
+
+        /* JSON: each CDN in turn, then the local copy as the last backup */
+        async function loadJson(path) {
+            for (const s of cdnUrls(path)) {
+                try {
+                    const data = await fetchT(s.url, r => r.json(), 6000);
+                    selectedCdn = s.cdn;
+                    applySettings();
+                    return data;
+                } catch (e) {
+                    console.warn(`[Data] ${new URL(s.cdn.url).hostname} failed for ${path}`, e);
+                }
+            }
+            return fetchT(path + (isAbs(path) ? '' : '?t=' + Date.now()), r => r.json(), 8000).catch(e => {
+                throw new Error(`${path}: every CDN mirror and the local copy failed (${e.message})`);
+            });
+        }
+
+        /* Images: preload each candidate until one loads, so a dead mirror never leaves a blank background */
+        function tryImage(url, ms) {
+            return new Promise((ok, no) => {
+                const im = new Image(),
+                    t = setTimeout(() => {
+                        im.src = '';
+                        no(new Error('timeout'));
+                    }, ms || 8000);
+                im.onload = () => {
+                    clearTimeout(t);
+                    ok(url);
+                };
+                im.onerror = () => {
+                    clearTimeout(t);
+                    no(new Error('error'));
+                };
+                im.src = url;
+            });
+        }
+        /* A background entry is either a path string (uses IMG_REPO) or an object:
+           {"user":"martygx","repo":"images","branch":"main","path":"wallpaper/java.png"} */
+        async function loadImage(entry) {
+            const obj = entry && typeof entry === 'object' ? entry : null,
+                path = obj ? obj.path : entry;
+            if (!path) return null;
+            const own = obj && obj.user && obj.repo ? {
+                user: obj.user,
+                repo: obj.repo,
+                branch: obj.branch || 'main'
+            } : null;
+            const list = cdnUrls(path, 'img', own),
+                local = [{
+                    url: path
+                }];
+            for (const s of [...list, ...local]) {
+                try {
+                    const u = await tryImage(s.url);
+                    if (s.cdn) selectedCdn = s.cdn;
+                    return u;
+                } catch (e) {
+                    console.warn('[Image] failed:', s.url);
+                }
+            }
+            return null;
+        }
+
+        function skinSources(file) {
+            if (isAbs(file)) return [{
+                url: file
+            }];
+            const clean = file.trim().replace(/^\.?\//, '').replace(/^\//, ''),
+                variants = [...new Set([clean, clean.replace(/^skins\//i, '')])],
+                out = [];
+            if (SKIN_REPO.user && SKIN_REPO.repo)
+                for (const c of cdnOrder())
+                    for (const v of variants) out.push({
+                        cdn: c,
+                        url: buildCdnUrl(c, SKIN_REPO.user, SKIN_REPO.repo, SKIN_REPO.branch || 'main', encodeURI(v))
+                    });
+            out.push({
+                url: file
+            });
+            return out;
+        }
+        const skinCache = {};
+
+        function loadSkinImg(file) {
+            return skinCache[file] ||= (async () => {
+                for (const s of skinSources(file)) {
+                    try {
+                        const im = await new Promise((ok, no) => {
+                            const im = new Image(),
+                                t = setTimeout(() => {
+                                    im.src = '';
+                                    no();
+                                }, 8000);
+                            im.onload = () => {
+                                clearTimeout(t);
+                                ok(im);
+                            };
+                            im.onerror = () => {
+                                clearTimeout(t);
+                                no();
+                            };
+                            im.src = s.url;
+                        });
+                        if (s.cdn) selectedCdn = s.cdn;
+                        return [s.url, im];
+                    } catch (e) {}
+                }
+                delete skinCache[file];
+                throw new Error('Could not load ' + file);
+            })();
+        }
+        const bgCache = {};
+        let bgTok = 0;
+        const loadBg = pg => {
+            const path = CONFIG.backgrounds[pg];
+            if (!path) return Promise.resolve(null);
+            return bgCache[pg] ||= loadImage(path).then(u => {
+                if (!u) delete bgCache[pg];
+                return u;
+            });
+        };
 
         /* ---- Editions ---- */
         const PAGES = {
@@ -2358,9 +2562,14 @@
             ['light', '#e7e7e7']
         ];
         const MODES = [
-            ['embed', 'Embedded', 'Plays inside the launcher with the sidebar still available.'],
+            ['embed', 'Embedded', 'Fills the whole page under a slim top bar with the game controls.'],
             ['full', 'Fullscreen', 'Embedded, then switches the game to fullscreen.'],
-            ['tab', 'New tab', 'Opens the game in its own about:blank tab.']
+            ['tab', 'New tab', 'Opens the game in its own tab.']
+        ];
+        const SRCS = [
+            ['direct', 'Direct', 'Writes the page straight into the frame or tab. The default.'],
+            ['blob', 'Blob URL', 'Opens the game from a blob: URL. Same origin, so saves and settings keep working.'],
+            ['data', 'Data URI', 'Opens the game from a data: URI. Runs in an isolated origin, so worlds and settings may not save.']
         ];
         let S = {
             name: 'Player',
@@ -2368,6 +2577,7 @@
             mode: 'embed',
             scale: 1,
             cdn: 'auto',
+            src: 'direct',
             confirm: true,
             page: 'java-versions',
             sel: {}
@@ -2375,6 +2585,7 @@
         try {
             S = Object.assign(S, JSON.parse(localStorage.getItem('ecl.settings') || '{}'));
         } catch (e) {}
+        if (!SRCS.some(x => x[0] === S.src)) S.src = 'direct';
         const save = () => {
             try {
                 localStorage.setItem('ecl.settings', JSON.stringify(S));
@@ -2385,7 +2596,7 @@
             document.documentElement.dataset.theme = S.theme;
             document.documentElement.style.setProperty('--ui-scale', S.scale);
             $('#profile-name').textContent = S.name || 'Player';
-            $('#mode-text').textContent = (MODES.find(m => m[0] === S.mode) || MODES[0])[1].toUpperCase();
+            $('#mode-text').textContent = (MODES.find(m => m[0] === S.mode) || MODES[0])[1].toUpperCase() + (S.src !== 'direct' ? ' · ' + SRCS.find(x => x[0] === S.src)[1].toUpperCase() : '');
             $('#mirror').textContent = 'MIRROR: ' + (selectedCdn ? new URL(selectedCdn.url).hostname.toUpperCase() : (S.cdn === 'auto' ? 'AUTO' : new URL(CDNS[S.cdn].url).hostname.toUpperCase()));
         }
 
@@ -2400,8 +2611,10 @@
     <select class="settings-input" onchange="setS('scale',+this.value)">${[.8, .9, 1, 1.1, 1.25, 1.5].map(v => `<option value="${v}"${S.scale === v ? ' selected' : ''}>${Math.round(v * 100)}%</option>`).join('')}</select></div></div>
   <div class="settings-section"><div class="settings-section-title">Launch mode</div><div class="mode-grid">
     ${MODES.map(m => `<div class="mode-card${S.mode === m[0] ? ' selected' : ''}" onclick="setS('mode','${m[0]}')"><div class="mode-card-title">${m[1]}</div><div class="mode-card-desc">${m[2]}</div></div>`).join('')}</div></div>
+  <div class="settings-section"><div class="settings-section-title">Open game as</div><div class="mode-grid">
+    ${SRCS.map(m => `<div class="mode-card${S.src === m[0] ? ' selected' : ''}" onclick="setS('src','${m[0]}')"><div class="mode-card-title">${m[1]}</div><div class="mode-card-desc">${m[2]}</div></div>`).join('')}</div></div>
   <div class="settings-section"><div class="settings-section-title">Loading</div>
-    <div class="settings-row"><div><div class="settings-label">CDN mirror</div><div class="settings-desc">Auto tries each mirror in order until one answers</div></div>
+    <div class="settings-row"><div><div class="settings-label">CDN mirror</div><div class="settings-desc">Used for game files, data lists and wallpapers. Auto tries each mirror until one answers</div></div>
     <select class="settings-input" onchange="setS('cdn',this.value==='auto'?'auto':+this.value)"><option value="auto">Auto</option>${CDNS.map((c, i) => `<option value="${i}"${S.cdn === i ? ' selected' : ''}>${new URL(c.url).hostname}</option>`).join('')}</select></div>
     <div class="settings-row"><div><div class="settings-label">Confirm before leaving</div><div class="settings-desc">Warn before closing the page while a game is open</div></div>
     <label class="toggle"><input type="checkbox" ${S.confirm ? 'checked' : ''} onchange="setS('confirm',this.checked)"><span class="toggle-slider"></span></label></div></div>`;
@@ -2455,10 +2668,14 @@
             $('#crumb').textContent = sp ? sp[1] : `${P.ed.toUpperCase()} / ${P.name.toUpperCase()}`;
             pill.textContent = sp ? '' : P.edName.toUpperCase();
             pill.className = 'ed-pill' + (sp ? '' : ' ed-' + P.ed);
-            const bgUrl = !sp && CONFIG.backgrounds[page],
-                bg = $('#bg');
-            bg.style.display = bgUrl ? 'block' : 'none';
-            if (bgUrl) bg.style.backgroundImage = `url("${bgUrl}")`;
+            const bgPath = !sp && CONFIG.backgrounds[page],
+                bg = $('#bg'),
+                tok = ++bgTok;
+            bg.style.display = bgPath ? 'block' : 'none';
+            bg.style.backgroundImage = '';
+            if (bgPath) loadBg(page).then(u => {
+                if (u && tok === bgTok) bg.style.backgroundImage = `url("${u}")`;
+            });
             if (p === 'settings') renderSettings();
             else if (p === 'servers') startServers();
             else if (p === 'skins') startSkins();
@@ -2486,7 +2703,7 @@
         function renderList() {
             if (cur().error) {
                 $('#count').textContent = '';
-                $('#grid').innerHTML = `<div class="empty">Could not load ${esc(cur().file)}.<br>${esc(cur().error)}<br><br>Open the launcher over HTTP (GitHub Pages or a local server) with the data folder beside it.</div>`;
+                $('#grid').innerHTML = `<div class="empty">Could not load ${esc(cur().file)}.<br>${esc(cur().error)}<br><br>Check your connection, or open the launcher over HTTP (GitHub Pages or a local server) with the data folder beside it.</div>`;
                 return;
             }
             const gs = groups(cur(), q, tagF),
@@ -2592,7 +2809,7 @@
                 r = it.repo,
                 b = it.branch,
                 dir = encodeURI(it.path);
-            const order = S.cdn === 'auto' ? CDNS : [CDNS[S.cdn], ...CDNS.filter((_, i) => i !== S.cdn)];
+            const order = cdnOrder();
             let last;
             for (const c of order) {
                 const host = new URL(c.url).hostname;
@@ -2628,6 +2845,54 @@
             doc.write(html);
             doc.close();
         }
+        const FRAME_ALLOW = 'fullscreen; autoplay; clipboard-read; clipboard-write; gamepad';
+        const DATA_LIMIT = 2 * 1024 * 1024; // Chromium rejects data: URLs longer than ~2 MB
+
+        function toDataUri(html) {
+            const bytes = new TextEncoder().encode(html);
+            let bin = '';
+            for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+            return 'data:text/html;charset=utf-8;base64,' + btoa(bin);
+        }
+        const toBlobUrl = html => URL.createObjectURL(new Blob([html], {
+            type: 'text/html;charset=utf-8'
+        }));
+
+        /* Turns the game HTML into what the chosen "Open game as" option needs */
+        function sourceFor(html) {
+            let m = S.src;
+            if (m === 'data') {
+                const u = toDataUri(html);
+                if (u.length <= DATA_LIMIT) return {
+                    m,
+                    url: u
+                };
+                toast('This game is too big for a data URI. Opened as a blob URL instead.', 1);
+                m = 'blob';
+            }
+            return m === 'blob' ? {
+                m,
+                url: toBlobUrl(html)
+            } : {
+                m: 'direct'
+            };
+        }
+
+        /* Shows the game in a window/tab we opened. Browsers block top-level data: navigation,
+           so a data URI goes into a full-size frame inside the tab instead. */
+        function showInWindow(w, html, title) {
+            const s = sourceFor(html);
+            if (s.m === 'blob') w.location.replace(s.url);
+            else if (s.m === 'data') {
+                writeDoc(w.document, `<!doctype html><title>${esc(title)}</title><style>html,body{margin:0;height:100%;background:#000}iframe{border:0;width:100%;height:100%;display:block}</style>`);
+                const f = w.document.createElement('iframe');
+                f.allow = FRAME_ALLOW;
+                f.allowFullscreen = true;
+                f.src = s.url;
+                w.document.body.appendChild(f);
+            } else writeDoc(w.document, html);
+            return s;
+        }
         async function play() {
             const it = selItem(),
                 P = cur();
@@ -2637,6 +2902,7 @@
                 w = window.open('about:blank', '_blank');
                 if (!w) return toast('Pop-up blocked. Allow pop-ups for this page and try again.', 1);
                 w.document.write(`<title>Loading...</title><body style="background:#070707;color:#cc0000;font-family:monospace">LOADING ${esc(dispName(it))}...</body>`);
+                w.document.close();
             }
             showLoad('LOADING ' + dispName(it).toUpperCase());
             try {
@@ -2648,7 +2914,7 @@
                 };
                 hideLoad();
                 setStatus(`RUNNING <span class="hl">${esc(P.edName.toUpperCase())} / ${esc(dispName(it).toUpperCase())}</span>`);
-                if (w) writeDoc(w.document, html);
+                if (w) showInWindow(w, html, dispName(it));
                 else openViewer(S.mode === 'full');
             } catch (e) {
                 hideLoad();
@@ -2658,18 +2924,30 @@
             }
         }
 
+        let frameBlob = null;
+
         function openViewer(full) {
             closeViewer(true);
-            $('#v-name').textContent = dispName(game.it) + (game.it.tag === 'WASM' ? ' (WASM)' : '');
+            $('#vw-name').textContent = dispName(game.it) + (game.it.tag === 'WASM' ? ' (WASM)' : '');
             const pill = $('#v-ed');
             pill.textContent = game.P.edName.toUpperCase();
             pill.className = 'ed-pill ed-' + game.P.ed;
             frame = document.createElement('iframe');
-            frame.allow = 'fullscreen; autoplay; clipboard-read; clipboard-write; gamepad';
+            frame.allow = FRAME_ALLOW;
             frame.allowFullscreen = true;
             $('#viewer').appendChild(frame);
             $('#viewer').classList.add('open');
-            writeDoc(frame.contentDocument, game.html);
+            const s = sourceFor(game.html);
+            if (s.m === 'direct') writeDoc(frame.contentDocument, game.html);
+            else {
+                if (s.m === 'blob') frameBlob = s.url;
+                frame.src = s.url;
+            }
+            $('#vw-info').textContent = [selectedCdn ? new URL(selectedCdn.url).hostname : '', {
+                direct: 'Direct',
+                blob: 'Blob URL',
+                data: 'Data URI'
+            } [s.m]].filter(Boolean).join(' · ');
             if (full) fsGame();
         }
 
@@ -2677,6 +2955,10 @@
             if (frame) {
                 frame.remove();
                 frame = null;
+            }
+            if (frameBlob) {
+                URL.revokeObjectURL(frameBlob);
+                frameBlob = null;
             }
             $('#viewer').classList.remove('open');
             if (!keep) {
@@ -2696,7 +2978,7 @@
             if (!game) return;
             const w = window.open('about:blank', '_blank');
             if (!w) return toast('Pop-up blocked. Allow pop-ups for this page.', 1);
-            writeDoc(w.document, game.html);
+            showInWindow(w, game.html, dispName(game.it));
         }
 
         function dlGame() {
@@ -2916,8 +3198,8 @@
         function runSkins() {
             const $ = id => document.getElementById(id);
             const toast = (m, e) => typeof showToast === "function" ? showToast(m, e) : console.log(m);
-            // data-file is used exactly as written (relative or absolute path / URL)
-            const skinUrl = f => f;
+            // data-file is a path in SKIN_REPO (or a full URL); the first CDN URL is used until the real one is found
+            const skinUrl = f => skinSources(f)[0].url;
             const S = 9; // screen px per skin pixel in the 3D viewer
 
             // 64x32 (or 128x64...) skins are "legacy": no overlays, left limbs mirror the right ones
@@ -3229,7 +3511,8 @@
                 sk.el.querySelector(".sk-name").textContent = sk.name;
                 sk.el.querySelector(".sk-name").title = sk.name;
                 if (sk.by) sk.el.querySelector(".sk-by").textContent = sk.by;
-                loadImg(sk.url).then(im => {
+                loadSkinImg(sk.file).then(([u, im]) => {
+                    sk.url = u;
                     sk.img = im;
                     const tr = sk.el.querySelector(".thumb .v-root");
                     buildModel(tr, im, sk.slim == null ? detectSlim(im) : sk.slim, 4);

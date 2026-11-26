@@ -1011,11 +1011,11 @@
         .viewer-head {
             background: var(--panel);
             border-bottom: 1px solid var(--border);
-            padding: 5px 14px;
-            min-height: 38px;
+            padding: 9px 18px;
+            min-height: 52px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             flex-wrap: wrap;
             flex-shrink: 0;
             zoom: var(--ui-scale)
@@ -1023,7 +1023,7 @@
 
         .viewer-head .info {
             font-family: var(--mono);
-            font-size: 10px;
+            font-size: 11px;
             letter-spacing: .1em;
             color: var(--text-dim);
             text-transform: uppercase;
@@ -1041,7 +1041,7 @@
         }
 
         .viewer-head .nm {
-            font-size: 15px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--text-bright);
             letter-spacing: .04em
@@ -1059,10 +1059,10 @@
             border: 1px solid var(--border2);
             color: var(--text);
             font-family: var(--mono);
-            font-size: 10px;
+            font-size: 11px;
             letter-spacing: .1em;
             text-transform: uppercase;
-            padding: 6px 11px;
+            padding: 10px 16px;
             cursor: pointer
         }
 
@@ -2090,7 +2090,7 @@
     <div class="launcher">
         <div class="title-bar">
             <div class="title-logo">
-                <div class="title-dot"></div>MartyGX Launcher<span class="ver">v1.2</span>
+                <div class="title-dot"></div>MartyGX Launcher<span class="ver">v1.4</span>
             </div>
             <div class="ed-pill" id="ed-pill"></div>
         </div>
@@ -2432,14 +2432,12 @@
                 url: file
             }];
             const clean = file.trim().replace(/^\.?\//, '').replace(/^\//, ''),
-                variants = [...new Set([clean, clean.replace(/^skins\//i, '')])],
                 out = [];
             if (SKIN_REPO.user && SKIN_REPO.repo)
-                for (const c of cdnOrder())
-                    for (const v of variants) out.push({
-                        cdn: c,
-                        url: buildCdnUrl(c, SKIN_REPO.user, SKIN_REPO.repo, SKIN_REPO.branch || 'main', encodeURI(v))
-                    });
+                for (const c of cdnOrder()) out.push({
+                    cdn: c,
+                    url: buildCdnUrl(c, SKIN_REPO.user, SKIN_REPO.repo, SKIN_REPO.branch || 'main', encodeURI(clean))
+                });
             out.push({
                 url: file
             });
@@ -2562,22 +2560,23 @@
             ['light', '#e7e7e7']
         ];
         const MODES = [
-            ['embed', 'Embedded', 'Fills the whole page under a slim top bar with the game controls.'],
-            ['full', 'Fullscreen', 'Embedded, then switches the game to fullscreen.'],
-            ['tab', 'New tab', 'Opens the game in its own tab.']
+            ['embed', 'Embedded', 'Fills the whole page under a top bar with the game controls.'],
+            ['blank', 'about:blank', 'Opens the game in its own about:blank tab.'],
+            ['blob', 'Blob URL', 'Opens the game in a new tab from a blob: URL. Same origin, so saves and settings keep working.'],
+            ['data', 'Data URI', 'Opens the game in a new tab from a data: URI. Runs in an isolated origin, so worlds and settings may not save.']
         ];
-        const SRCS = [
-            ['direct', 'Direct', 'Writes the page straight into the frame or tab. The default.'],
-            ['blob', 'Blob URL', 'Opens the game from a blob: URL. Same origin, so saves and settings keep working.'],
-            ['data', 'Data URI', 'Opens the game from a data: URI. Runs in an isolated origin, so worlds and settings may not save.']
-        ];
+        /* How each new-tab mode hands the game page to the tab */
+        const MODE_METHOD = {
+            blank: 'direct',
+            blob: 'blob',
+            data: 'data'
+        };
         let S = {
             name: 'Player',
             theme: 'red',
             mode: 'embed',
             scale: 1,
             cdn: 'auto',
-            src: 'direct',
             confirm: true,
             page: 'java-versions',
             sel: {}
@@ -2585,7 +2584,12 @@
         try {
             S = Object.assign(S, JSON.parse(localStorage.getItem('ecl.settings') || '{}'));
         } catch (e) {}
-        if (!SRCS.some(x => x[0] === S.src)) S.src = 'direct';
+        /* Settings saved by older versions: tab/full/src -> single launch mode */
+        if (S.src === 'blob' || S.src === 'data') S.mode = S.src;
+        else if (S.mode === 'tab') S.mode = 'blank';
+        else if (S.mode === 'full') S.mode = 'embed';
+        delete S.src;
+        if (!MODES.some(m => m[0] === S.mode)) S.mode = 'embed';
         const save = () => {
             try {
                 localStorage.setItem('ecl.settings', JSON.stringify(S));
@@ -2596,7 +2600,7 @@
             document.documentElement.dataset.theme = S.theme;
             document.documentElement.style.setProperty('--ui-scale', S.scale);
             $('#profile-name').textContent = S.name || 'Player';
-            $('#mode-text').textContent = (MODES.find(m => m[0] === S.mode) || MODES[0])[1].toUpperCase() + (S.src !== 'direct' ? ' · ' + SRCS.find(x => x[0] === S.src)[1].toUpperCase() : '');
+            $('#mode-text').textContent = (MODES.find(m => m[0] === S.mode) || MODES[0])[1].toUpperCase();
             $('#mirror').textContent = 'MIRROR: ' + (selectedCdn ? new URL(selectedCdn.url).hostname.toUpperCase() : (S.cdn === 'auto' ? 'AUTO' : new URL(CDNS[S.cdn].url).hostname.toUpperCase()));
         }
 
@@ -2611,8 +2615,6 @@
     <select class="settings-input" onchange="setS('scale',+this.value)">${[.8, .9, 1, 1.1, 1.25, 1.5].map(v => `<option value="${v}"${S.scale === v ? ' selected' : ''}>${Math.round(v * 100)}%</option>`).join('')}</select></div></div>
   <div class="settings-section"><div class="settings-section-title">Launch mode</div><div class="mode-grid">
     ${MODES.map(m => `<div class="mode-card${S.mode === m[0] ? ' selected' : ''}" onclick="setS('mode','${m[0]}')"><div class="mode-card-title">${m[1]}</div><div class="mode-card-desc">${m[2]}</div></div>`).join('')}</div></div>
-  <div class="settings-section"><div class="settings-section-title">Open game as</div><div class="mode-grid">
-    ${SRCS.map(m => `<div class="mode-card${S.src === m[0] ? ' selected' : ''}" onclick="setS('src','${m[0]}')"><div class="mode-card-title">${m[1]}</div><div class="mode-card-desc">${m[2]}</div></div>`).join('')}</div></div>
   <div class="settings-section"><div class="settings-section-title">Loading</div>
     <div class="settings-row"><div><div class="settings-label">CDN mirror</div><div class="settings-desc">Used for game files, data lists and wallpapers. Auto tries each mirror until one answers</div></div>
     <select class="settings-input" onchange="setS('cdn',this.value==='auto'?'auto':+this.value)"><option value="auto">Auto</option>${CDNS.map((c, i) => `<option value="${i}"${S.cdn === i ? ' selected' : ''}>${new URL(c.url).hostname}</option>`).join('')}</select></div>
@@ -2858,9 +2860,9 @@
             type: 'text/html;charset=utf-8'
         }));
 
-        /* Turns the game HTML into what the chosen "Open game as" option needs */
-        function sourceFor(html) {
-            let m = S.src;
+        /* Turns the game HTML into what the chosen launch mode needs */
+        function sourceFor(html, method) {
+            let m = method;
             if (m === 'data') {
                 const u = toDataUri(html);
                 if (u.length <= DATA_LIMIT) return {
@@ -2880,8 +2882,8 @@
 
         /* Shows the game in a window/tab we opened. Browsers block top-level data: navigation,
            so a data URI goes into a full-size frame inside the tab instead. */
-        function showInWindow(w, html, title) {
-            const s = sourceFor(html);
+        function showInWindow(w, html, title, method) {
+            const s = sourceFor(html, method);
             if (s.m === 'blob') w.location.replace(s.url);
             else if (s.m === 'data') {
                 writeDoc(w.document, `<!doctype html><title>${esc(title)}</title><style>html,body{margin:0;height:100%;background:#000}iframe{border:0;width:100%;height:100%;display:block}</style>`);
@@ -2898,7 +2900,7 @@
                 P = cur();
             if (!it || $('#load').classList.contains('active')) return;
             let w = null;
-            if (S.mode === 'tab') {
+            if (S.mode !== 'embed') {
                 w = window.open('about:blank', '_blank');
                 if (!w) return toast('Pop-up blocked. Allow pop-ups for this page and try again.', 1);
                 w.document.write(`<title>Loading...</title><body style="background:#070707;color:#cc0000;font-family:monospace">LOADING ${esc(dispName(it))}...</body>`);
@@ -2914,8 +2916,8 @@
                 };
                 hideLoad();
                 setStatus(`RUNNING <span class="hl">${esc(P.edName.toUpperCase())} / ${esc(dispName(it).toUpperCase())}</span>`);
-                if (w) showInWindow(w, html, dispName(it));
-                else openViewer(S.mode === 'full');
+                if (w) showInWindow(w, html, dispName(it), MODE_METHOD[S.mode]);
+                else openViewer();
             } catch (e) {
                 hideLoad();
                 if (w) w.close();
@@ -2924,9 +2926,7 @@
             }
         }
 
-        let frameBlob = null;
-
-        function openViewer(full) {
+        function openViewer() {
             closeViewer(true);
             $('#vw-name').textContent = dispName(game.it) + (game.it.tag === 'WASM' ? ' (WASM)' : '');
             const pill = $('#v-ed');
@@ -2937,28 +2937,14 @@
             frame.allowFullscreen = true;
             $('#viewer').appendChild(frame);
             $('#viewer').classList.add('open');
-            const s = sourceFor(game.html);
-            if (s.m === 'direct') writeDoc(frame.contentDocument, game.html);
-            else {
-                if (s.m === 'blob') frameBlob = s.url;
-                frame.src = s.url;
-            }
-            $('#vw-info').textContent = [selectedCdn ? new URL(selectedCdn.url).hostname : '', {
-                direct: 'Direct',
-                blob: 'Blob URL',
-                data: 'Data URI'
-            } [s.m]].filter(Boolean).join(' · ');
-            if (full) fsGame();
+            writeDoc(frame.contentDocument, game.html);
+            $('#vw-info').textContent = selectedCdn ? new URL(selectedCdn.url).hostname : '';
         }
 
         function closeViewer(keep) {
             if (frame) {
                 frame.remove();
                 frame = null;
-            }
-            if (frameBlob) {
-                URL.revokeObjectURL(frameBlob);
-                frameBlob = null;
             }
             $('#viewer').classList.remove('open');
             if (!keep) {
@@ -2978,7 +2964,7 @@
             if (!game) return;
             const w = window.open('about:blank', '_blank');
             if (!w) return toast('Pop-up blocked. Allow pop-ups for this page.', 1);
-            showInWindow(w, game.html, dispName(game.it));
+            showInWindow(w, game.html, dispName(game.it), 'direct');
         }
 
         function dlGame() {
